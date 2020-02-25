@@ -11,16 +11,16 @@ clear all； %清除工作区的变量
 clc;  %清除代码区代码
 ```
 %1.读取图像
-
+```
 [fn,pn,fi]=uigetfile('*.jpg','choose your image');  
                        %[filename,pathname,filetype]，uigetfile函数直接弹出选取文件夹。
 I=imread([pn,fn]);     %读取图像，先文件路径，后文件名
 figure('name','原始图像'),subplot(1,3,1);
 imshow(I);     %创建新窗口，显示图像I
 title('原始图像');     %为图像添加名字
-
+```
 %2.定位车牌
-
+```
 [y,x,z]=size(I);      % size(I) 反回矩阵行数/列数/片数          
 d_I=double(I);          %将I数据转换成双精度型
 Y_threshlow=5;          %阈值 决定提取的彩图质量
@@ -173,7 +173,7 @@ end
 I1= I(Y1:Y2,X1:X2,:);
 subplot(1,3,2);
 imshow(I1);title('初步修正');     
-
+```
 
 
 
