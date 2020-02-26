@@ -6,9 +6,9 @@ This my plate recognition system based on deep learning
 
 %main
 ```
-close ； %关闭所有的figure 窗口
-clear ； %清除工作区的变量
-clc;  %清除代码区代码
+close all %关闭所有的figure 窗口
+clear all %清除工作区的变量
+clc  %清除代码区代码
 ```
 %1.读取图像
 ```
