@@ -306,11 +306,11 @@ bw7=~bw7;
 S2=x*y;   %利用面积设置分割阈值
 if S2<=20000
     S_thresh=4;
-elseif SS>20000&&SS<=30000
+elseif S2>20000&&S2<=30000
     S_thresh=4;
-elseif SS>30000&&SS<=50000
+elseif S2>30000&&S2<=50000
     S_thresh=4;
-elseif SS>50000&&SS<=80000
+elseif S2>50000&&S2<=80000
     S_thresh=4;
 else
     S_thresh=4;
@@ -318,7 +318,7 @@ end
 ganrao=S2/100;          %干扰系数，为字符大小框选减小误差
 histogram=sum(~bw7);    %自定义histogram数组，存储垂直方向黑色像素点
 
-%分割
+%字符边界识别
 k=1;
 for h=1:x-1     %判定字符左边界，并存储
   if  ((histogram(1,h)<=S_thresh)&&(histogram(1,h+1)>S_thresh))||((h==1)&&histogram(1,h)>S_thresh)
@@ -355,7 +355,9 @@ for s=1:2:k-1
     subplot(1,k/2,(s+1)/2);
     imshow(bw7(1:y,sign(s):sign(s+1)));
 end
+···
 %7个字符的位置。
+···
 sign_1=bw(1:y,sign(1):sign(2));
 sign_2=bw(1:y,sign(3):sign(4));
 sign_3=bw(1:y,sign(5):sign(6));
