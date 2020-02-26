@@ -15,7 +15,7 @@ clc;  %清除代码区代码
 [fn,pn,fi]=uigetfile('*.jpg','choose your image');  
                        %[filename,pathname,filetype]，uigetfile函数直接弹出选取文件夹。
 I=imread([pn,fn]);     %读取图像，先文件路径，后文件名
-figure('name','原始图像'),subplot(1,3,1);
+figure('name','原始图像'),subplot(2,3,1);
 imshow(I);     %创建新窗口，显示图像I
 title('原始图像');     %为图像添加名字
 ```
@@ -171,9 +171,203 @@ if(X2>=x)
   X2=x;
 end
 I1= I(Y1:Y2,X1:X2,:);
-subplot(1,3,2);
+subplot(2,3,2);
 imshow(I1);title('初步修正');     
 ```
+%二次修正
+```
+S=(Y2-Y1)*(X2-X1)   %通过车牌识别区域面积来设置不同的阈值
+if  S<=25000
+  threshold=50;
+  Y_secrectify=3;
+  X_secrectify=3;
+  
+elseif S>25000&&S<=45000
+  threshold=100;
+  Y_secrectify=-3;
+  X_secrectify=3;
+  
+elseif S>45000&&S<=80000
+  threshold=200;
+  Y_secrectify=-3;
+  X_secrectify=3;
+elseif S>80000&&S<=150000
+  threshold=300;
+  Y_secrectify=-10;
+  X_secrectify=-10;
+  elseif S>150000&&S<=400000
+  threshold=600;
+  Y_secrectify=-10;
+  X_secrectify=-10;
+else
+  threshold=1800;
+  Y_secrectify=-10;
+  X_secrectify=-10;
+end
+Y1=Y1-Y_secrectify;               %对车牌区域的修正,向上
+if(Y1<=0)
+  Y1=1;
+end
+Y2=Y2+Y_secrectify;               %对车牌区域的修正,向下
+if(Y2>=y)
+  Y2=y;
+end
+X1=X1-X_secrectify;               %对车牌区域的修正
+if(X1<=0)
+  X1=1;
+end
+X2=X2+X_secrectify;               %对车牌区域的修正
+if(X2>=x)
+  X2=x;
+end
+
+I2= I(Y1:Y2,X1:X2,:);
+subplot(2,3,3);
+imshow(I2);title('二次修正');
+```
+%倾斜校正
+```
+I3=rgb2gray(I2);subplot(2,3,4);   %灰度处理
+imshow(I3),title('灰度图像');
+I4=wiener2(I3,[5 5]);    %2D维纳滤波函数去噪声。 函数：wiener2(I，[m n]，噪声)
+I5=edge(I4,'canny');     %canny边缘检测以减少干扰
+subplot(2,3,5);imshow(I5);title('canny算子');
+theta=1:180;     %检测的变化角度
+[R xp]=radon(I5,theta);     %沿theta做radon变换，返回R矩阵和每个投影对应的列向量。最大角90
+[r c]=find(R>=max(max(R)));     %检索最大投影角度的最大值，倾斜角存于c中
+I6=imrotate(I3,90-c,'bilinear','crop');     %校正图像，用'90-c'来计算倾斜角
+                                        %取负值，向右旋转。双线性插值并且输出相同大小的图像
+subplot(2,3,6);imshow(I6);title('倾斜角校正');
+```
+%形态学处理
+```
+bw1=im2bw(I6,graythresh(I6));   %通过graythresh找阈值，进行而二值处理
+bw2=bwmorph(bw1,'hbreak',inf);    %使用H型断开，Inf表无穷次，直到图像无变化为止。
+bw3=bwmorph(bw2,'spur',inf);    %除去毛刺类小分支
+bw4=bwmorph(bw3,'open',5);      %开运算(先膨胀再腐蚀)，5次
+bw5=bwareaopen(bw4,threshold);  %删除面积小于threshold的部分，默认8邻域
+bw=~bw5;    %倒置二进制矩阵，凸显车牌字体。
+figure('name','形态学处理'),subplot(2,3,1);imshow(bw1);title('二值化');
+subplot(2,3,2);imshow(bw2);title('Hbreak');
+subplot(2,3,3);imshow(bw3);title('去毛刺');
+subplot(2,3,4);imshow(bw4);title('开运算');
+subplot(2,3,5);imshow(bw5);title('擦除');
+subplot(2,3,6);imshow(bw);title('取反 倒置');
+```
+%投影法去边框
+
+%垂直方向投影，扫描每一列像素，绘制柱状图 来直观表示像素个数。
+%先平滑去噪声后再和阈值化一起使用。
+```
+[y,x]=size(bw);     %获取倒置的逻辑图像，进一步处理：投影法
+Y_ty=(sum((~bw)'))';   %向左边投影：分析水平方向像素点，识别上下边框
+X_ty=sum((~bw));       %向下投影：分析垂直方向像素点，识别左右边框
+
+%figure,subplot(1,3,1);
+%imhist(Y_ty);title('left');
+%subplot(1,3,2);
+%imhist(X_ty);title('down');    %显示错误，需要修改显示内容
+
+%找黑色边框边缘
+
+%由曲线图的上下两个极大值分别从上向下和从下向上搜索波谷，
+%波谷值小于阈值 且 上下波谷间有距离字符
+%由这两个波谷位置水平分割车牌，截去车牌的上下边框。
+
+Y_up=fix(y/2);    %设上边界为中间。 mean()取平均值。
+Y_threshold=mean(Y_ty((Y_up-10):(Y_up+10),1))/1.6;    %对投影的中间区域的平均值来设定阈值
+while((Y_ty(Y_up,1)>=Y_threshold)&&(Y_up>1))      %大于阈值且不超上限
+    Y_up=Y_up-1;
+end
+
+Y_down=fix(y/2);
+while((Y_ty(Y_down,1)>=Y_threshold)&&(Y_down<y))      %大于阈值且不超下限
+    Y_down=Y_down+1;
+end
+
+%垂直投影，车牌第一个字为汉字，所以第一个波峰到波谷为左边框
+%删除左边框，以提取车牌字符
+X_right=1;    %右边限制值
+X_threshold=1;
+if (X_ty(1,fix(x/14)))<=X_threshold
+  X_right=fix(x/14);
+end
+
+bw6=bw(Y_up:Y_down,X_right:x);
+figure, %subplot(1,3,3);
+imshow(bw6);title('上下边框擦除');
+bw7=~bw6;
+bw7=bwareaopen(bw7,threshold);    %擦除面积小于阈值的部分
+bw7=~bw7;
+[y,x]=size(bw7);    %更新车牌长宽
+```
+%分割字符
+```
+S2=x*y;   %利用面积设置分割阈值
+if S2<=20000
+    S_thresh=4;
+elseif SS>20000&&SS<=30000
+    S_thresh=4;
+elseif SS>30000&&SS<=50000
+    S_thresh=4;
+elseif SS>50000&&SS<=80000
+    S_thresh=4;
+else
+    S_thresh=4;
+end
+ganrao=S2/100;          %干扰系数，为字符大小框选减小误差
+histogram=sum(~bw7);    %自定义histogram数组，存储垂直方向黑色像素点
+
+%分割
+k=1;
+for h=1:x-1     %判定字符左边界，并存储
+  if  ((histogram(1,h)<=S_thresh)&&(histogram(1,h+1)>S_thresh))||((h==1)&&histogram(1,h)>S_thresh)
+        sign(1,k)=h;        %存储字符左边界
+        k=k+1;
+    elseif ((histogram(1,h)>S_thresh)&&(histogram(1,h+1)<=S_thresh))||((h==x-1)&&histogram(1,h)>S_thresh)       %上下判断交换，
+        sign(1,k)=h+1;      %字符右边界
+        k=k+1;
+    end
+end
+k=k-1;    %减去上一步多产生的K。
+if k<10
+    msgbox('warning');    %每个字符两个K，
+    pause;
+end
+
+%若字符的左右边界的垂直黑色像素小于干扰值
+% 或者 第一个识别字符边界与后面的字符边界宽度不一样
+%则第一个字符为左边框，删去，用后面识别字符替代
+if (sum(histogram(1,sign(1,1):sign(1,2)))<ganrao)||((sign(1,2)-sign(1,1))<(sign(1,4)-sign(1,3))/2)
+    for i=3:k
+      sign(1,i-2)=sign(1,i);
+    end
+ end
+ [m n]=size(sign);    %n为字符边界个数
+if n<14
+  msgbox('warning');
+  pause;
+end
+sign=sign(1,1:14);    %7个字符，左右共14个边界
+[m k]=size(sign);
+figure('name','字符识别');     %显示切割的字符
+for s=1:2:k-1
+    subplot(1,k/2,(s+1)/2);
+    imshow(bw7(1:y,sign(s):sign(s+1)));
+end
+%7个字符的位置。
+sign_1=bw(1:y,sign(1):sign(2));
+sign_2=bw(1:y,sign(3):sign(4));
+sign_3=bw(1:y,sign(5):sign(6));
+sign_4=bw(1:y,sign(7):sign(8));
+sign_5=bw(1:y,sign(9):sign(10));
+sign_6=bw(1:y,sign(11):sign(12));
+sign_7=bw(1:y,sign(13):sign(14));
+```
+
+
+
+
 
 
 
