@@ -6,8 +6,8 @@ This my plate recognition system based on deep learning
 
 %main
 ```
-close all； %关闭所有的figure 窗口
-clear all； %清除工作区的变量
+close ； %关闭所有的figure 窗口
+clear ； %清除工作区的变量
 clc;  %清除代码区代码
 ```
 %1.读取图像
@@ -355,9 +355,9 @@ for s=1:2:k-1
     subplot(1,k/2,(s+1)/2);
     imshow(bw7(1:y,sign(s):sign(s+1)));
 end
-···
+```
 %7个字符的位置。
-···
+```
 sign_1=bw(1:y,sign(1):sign(2));
 sign_2=bw(1:y,sign(3):sign(4));
 sign_3=bw(1:y,sign(5):sign(6));
