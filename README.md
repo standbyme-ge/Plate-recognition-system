@@ -21,6 +21,16 @@ title('原始图像');     %为图像添加名字
 ```
 %2.定位车牌
 ```
+%添加：图像倾斜改正
+I3=rgb2gray(I);     %灰度处理
+I4=wiener2(I3,[5 5]);    %2D维纳滤波函数去噪声。 函数：wiener2(I，[m n]，噪声)
+I5=edge(I4,'canny');     %canny边缘检测以减少干扰
+theta=1:180;     %检测的变化角度
+[R xp]=radon(I5,theta);     %沿theta做radon变换，返回R矩阵和每个投影对应的列向量。最大角90
+[r c]=find(R>=max(max(R)));     %检索最大投影角度的最大值，倾斜角存于c中
+I=imrotate(I,90-c,'bilinear','crop');     %校正图像，用'90-c'来计算倾斜角
+                                        %取负值，向右旋转。双线性插值并且输出相同大小的图像
+%改正end
 [y,x,z]=size(I);      % size(I) 反回矩阵行数/列数/片数          
 d_I=double(I);          %将I数据转换成双精度型
 Y_threshlow=5;          %阈值 决定提取的彩图质量
