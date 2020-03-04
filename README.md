@@ -42,7 +42,8 @@ if (k==0)
   while ((B_y(Y2,1)>=Y_threshlow)&&(Y2<y))   %查找车牌下界
     Y2=Y2+1;
   end
-  
+  subplot(2,3,3),imshow(I(Y1:Y2,:,:));
+  title('Y1');
 %X方向
   X_threshhigh=(Y2-Y1)/11;    %X方向长度
   B_x=zeros(1,x);   %统计X行的蓝色像素点
@@ -69,6 +70,8 @@ if (k==0)
   while((B_x(1,X2)<=X_threshhigh)&&(X2>X1))   %限定范围，右>左
       X2=X2-1;
   end
+  subplot(2,3,4),imshow(I(Y1:Y2,X1:X2,:));
+  title('X1');
    a=Y2-Y1+1;        %宽度
    b=X2-X1+1;        %长度
    White=0;            %存储白色区域色素点
@@ -120,6 +123,8 @@ end
     while ((B_y(Y2,1)>+Y_threshlow)&&(Y2<y))    %down side
         Y2=Y2+1;
     end
+subplot(2,3,5),imshow(I(Y1:Y2,:,:));
+  title('Y2');
   %x
     X_threshhigh=(Y2-Y1)/15;    %X方向长度
     B_x=zeros(1,x);   %统计X行的蓝色像素点
@@ -146,6 +151,8 @@ end
   while((B_x(1,X2)<=X_threshhigh)&&(X2>X1))   %限定范围，右>左
       X2=X2-1;
   end
+  subplot(2,3,6),imshow(I(Y1:Y2,X1:X2,:));
+  title('X2');
   a=Y2-Y1+1;
   b=X2-X1+1;
   white=0;
@@ -193,9 +200,8 @@ I=imread([pn,fn]);     %读取图像，先文件路径，后文件名
 figure('name','原始图像'),subplot(2,3,1);
 imshow(I);     %创建新窗口，显示图像I
 title('原始图像');     %为图像添加名字
-```
+
 %2.定位车牌
-```
 
 [y,x,z]=size(I);      % size(I) 反回矩阵行数/列数/片数          
 d_I=double(I);          %将I数据转换成双精度型
