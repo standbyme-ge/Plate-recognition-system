@@ -3,7 +3,7 @@ This my plate recognition system based on deep learning
 
 
 ====================based on MATLAB
-```
+
 %1读取
 ```
 close ,clear,clc;
@@ -358,7 +358,7 @@ subplot(1,7,4);imshow(S_4);
 subplot(1,7,5);imshow(S_5);
 subplot(1,7,6);imshow(S_6);
 subplot(1,7,7);imshow(S_7);
-
+```
 
 
 
